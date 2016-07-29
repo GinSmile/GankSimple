@@ -1,6 +1,7 @@
 package com.neusnow.ganksimple;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.support.v7.widget.RecyclerView.Adapter;
 import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.view.LayoutInflater;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 
 import com.neusnow.ganksimple.bean.Girl;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Transformation;
 
 import java.util.List;
 
@@ -79,7 +81,12 @@ public class RecyclerViewAdapter extends Adapter<ViewHolder> {
             ((ItemViewHolder) holder).tv_desc.setText(girl.getDesc());
 
 
-            Picasso.with(context).load(girl.getUrl()).into(((ItemViewHolder) holder).iv_girl);
+            Picasso.with(context).load(girl.getUrl())
+                    .transform(new CropSquareTransformation())
+                    //.transform(new CenterFaceCrop(300,300))//人脸识别的类库，大小方面有点问题，有待解决
+                    .placeholder(R.color.colorWhite)
+                    .error(R.mipmap.girl_image)
+                    .into(((ItemViewHolder) holder).iv_girl);
 
             if (onItemClickListener != null) {
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -123,5 +130,27 @@ public class RecyclerViewAdapter extends Adapter<ViewHolder> {
         public FootViewHolder(View view) {
             super(view);
         }
+    }
+}
+
+
+class CropSquareTransformation implements Transformation {
+
+    //截取从宽度和高度最小作为bitmap的宽度和高度
+    @Override
+    public Bitmap transform(Bitmap source) {
+        int size=Math.min(source.getWidth(),source.getHeight());
+        int x=(source.getWidth()-size)/2;
+        int y=(source.getHeight()-size)/2;
+        Bitmap result=Bitmap.createBitmap(source,x,y,size,size);
+        if (result!=source){
+            source.recycle();//释放bitmap
+        }
+        return result;
+    }
+
+    @Override
+    public String key() {
+        return "square()";
     }
 }
