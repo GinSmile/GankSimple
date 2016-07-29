@@ -5,7 +5,7 @@ Gank.io
 Gank.io 客户端。
 
 
-<img src="screenshot/simple1.png" width = "240" height = "430" alt="simple"/>
+<img src="screenshot/simple2.png" width = "240" height = "430" alt="simple"/>
 
 使用了
 
