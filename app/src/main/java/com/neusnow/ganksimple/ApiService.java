@@ -10,7 +10,7 @@ import retrofit2.http.Path;
  * Created by xujin on 16/08/03.
  */
 public interface ApiService {
-    @GET("/data/福利/" + 10 + "/{page}")
+    @GET("data/福利/" + 10 + "/{page}")
     Call<GirlPageBean> getData(
             @Path("page") int page);
 }

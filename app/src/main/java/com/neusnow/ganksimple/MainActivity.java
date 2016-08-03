@@ -3,7 +3,6 @@ package com.neusnow.ganksimple;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -13,9 +12,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.gson.Gson;
 import com.neusnow.ganksimple.bean.Girl;
 import com.neusnow.ganksimple.bean.GirlPageBean;
 import com.neusnow.ganksimple.bean.SpacesItemDecoration;
@@ -42,14 +40,9 @@ public class MainActivity extends AppCompatActivity {
     private List<Girl> data = new ArrayList<Girl>();
     private RecyclerViewAdapter adapter;
     private Handler handler = new Handler();
-    //public OkHttpClient mOkHttpClient;
 
     private int[] lastPositions;
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,15 +50,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         PicassoFaceDetector.initialize(this);
 
@@ -88,8 +72,8 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         data.clear();
-                        getData();
                         index = 1;
+                        getData(index);
                     }
                 }, 2000);
             }
@@ -152,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 index++;
-                                getMoreData(index);
+                                getData(index);
                                 Log.d("test", "load more completed");
                                 isLoading = false;
                             }
@@ -162,16 +146,32 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mRecyclerView.smoothScrollToPosition(0);
+                mSwipeRefreshLayout.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSwipeRefreshLayout.setRefreshing(true);
+                             }
+                });
+                getData(1);
+            }
+        });
+
     }
 
     public void initData(){
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                    getData();
+                    getData(1);
             }
         }, 100);
-
     }
 
     private int findMax(int[] lastPositions) {
@@ -187,54 +187,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 获取测试数据
      */
-    private void getData() {
-        //1.创建Retrofit对象
-        Retrofit retrofit = new Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create())
-                .baseUrl(Constant.BASE_URL)
-                .build();
-
-        //2.创建访问请求
-        ApiService service = retrofit.create(ApiService.class);
-        Call<GirlPageBean> call = service.getData(1);
-
-        //3.发送请求
-        call.enqueue(new Callback<GirlPageBean>() {
-            @Override
-            public void onResponse(Call<GirlPageBean> call, Response<GirlPageBean> response) {
-                Collection<Girl> girls = new ArrayList<Girl>();
-                //4.处理结果
-                if (response.isSuccessful()){
-                    GirlPageBean result = response.body();
-                    if (result != null){
-                        List<GirlPageBean.ResultsBean> results = result.getResults();
-                        for(GirlPageBean.ResultsBean res : results){
-                            Girl girl = new Girl();
-                            girl.setDesc(res.getDesc());
-                            girl.setUrl(res.getUrl());
-                            girl.setPublishedAt(res.getPublishedAt());
-                            girl.setWho(res.getWho());
-
-                            girls.add(girl);
-                        }
-                    }
-                }
-
-                data.addAll(girls);
-            }
-
-            @Override
-            public void onFailure(Call<GirlPageBean> call, Throwable t) {
-
-            }
-        });
-
-        Log.v("te::","download complete...2");
-
-    }
-
-
-    private void getMoreData(int index)  {
+    private void getData(int index)  {
 
         //1.创建Retrofit对象
         Retrofit retrofit = new Retrofit.Builder()
@@ -250,25 +203,21 @@ public class MainActivity extends AppCompatActivity {
         call.enqueue(new Callback<GirlPageBean>() {
             @Override
             public void onResponse(Call<GirlPageBean> call, Response<GirlPageBean> response) {
-                Collection<Girl> girls = new ArrayList<Girl>();
                 //4.处理结果
                 if (response.isSuccessful()){
                     GirlPageBean result = response.body();
-                    if (result != null){
-                        List<GirlPageBean.ResultsBean> results = result.getResults();
-                        for(GirlPageBean.ResultsBean res : results){
-                            Girl girl = new Girl();
-                            girl.setDesc(res.getDesc());
-                            girl.setUrl(res.getUrl());
-                            girl.setPublishedAt(res.getPublishedAt());
-                            girl.setWho(res.getWho());
-
-                            girls.add(girl);
-                        }
-                    }
+                    data.addAll(analysisResult(result));
                 }
 
-                data.addAll(girls);
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        adapter.notifyDataSetChanged();
+                        mSwipeRefreshLayout.setRefreshing(false);
+                        adapter.notifyItemRemoved(adapter.getItemCount());
+                        Toast.makeText(MainActivity.this, "下载完成," + adapter.getItemCount(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -277,20 +226,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Log.v("te::","download complete...more");
-
     }
 
 
     /**
-     * 利用GSON解析JSON
+     * 从GirlPageBean中提取出Girl的集合
      */
-    private Collection<Girl> analysisJson(String jsonData){
+    private Collection<Girl> analysisResult(GirlPageBean result){
         Collection<Girl> girls = new ArrayList<Girl>();
-
-        Gson gson = new Gson();
-        GirlPageBean girlPageBean = gson.fromJson(jsonData, GirlPageBean.class);
-        List<GirlPageBean.ResultsBean> results = girlPageBean.getResults();
+        List<GirlPageBean.ResultsBean> results = result.getResults();
         for(GirlPageBean.ResultsBean res : results){
             Girl girl = new Girl();
             girl.setDesc(res.getDesc());
