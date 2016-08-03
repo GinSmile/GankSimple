@@ -17,6 +17,7 @@ import com.squareup.picasso.Transformation;
 import java.util.List;
 
 import butterknife.Bind;
+import butterknife.ButterKnife;
 
 /**
  * Created by xujin on 16/07/20.
@@ -120,6 +121,7 @@ public class RecyclerViewAdapter extends Adapter<ViewHolder> {
 
         public ItemViewHolder(View view) {
             super(view);
+            ButterKnife.bind(this, view);
         }
     }
 

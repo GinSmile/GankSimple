@@ -13,4 +13,12 @@ public interface ApiService {
     @GET("data/福利/" + 10 + "/{page}")
     Call<GirlPageBean> getData(
             @Path("page") int page);
+
+    /*
+    @GET("day/{year}/{month}/{day}")
+    Call<AllPageBean> getAll(
+            @Path("year") int year,
+            @Path("month") int month,
+            @Path("day") int day);
+            */
 }

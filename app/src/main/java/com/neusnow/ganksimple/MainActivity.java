@@ -1,5 +1,6 @@
 package com.neusnow.ganksimple;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
@@ -24,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 
 import butterknife.Bind;
+import butterknife.ButterKnife;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -33,12 +35,12 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
 
-    @Bind(R.id.swipe_refresh_widget) private SwipeRefreshLayout mSwipeRefreshLayout;
-    @Bind(R.id.my_list) private RecyclerView mRecyclerView;
-
+    @Bind(R.id.swipe_refresh_widget)  SwipeRefreshLayout mSwipeRefreshLayout;
+    @Bind(R.id.my_list)  RecyclerView mRecyclerView;
+    @Bind(R.id.fab) FloatingActionButton fab;
     boolean isLoading;
     private int index = 1;
-    private List<Girl> data = new ArrayList<Girl>();
+    private List<Girl> data = new ArrayList<>();
     private RecyclerViewAdapter adapter;
     private Handler handler = new Handler();
     private int[] lastPositions;
@@ -51,9 +53,9 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        PicassoFaceDetector.initialize(this);
+        //PicassoFaceDetector.initialize(this);
 
-
+        ButterKnife.bind(this);
 
         //初次进入，显示加载动画，加载初始的数据
         mSwipeRefreshLayout.post(new Runnable() {
@@ -87,6 +89,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(View view, int position) {
                 Log.d("test", "item position = " + position);
+
+                Girl girl  = data.get(position);
+
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra("date",girl.getPublishedAt());
+                intent.putExtra("url",girl.getUrl());
+                startActivity(intent);
+
             }
 
             @Override
@@ -114,7 +124,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                Log.d("test", "onScrolled");
+                Log.d("test", "onScrolled," + dx + " ,"+ dy);
+
+                if(dy > 10) fab.hide();
+                if(dy < -10) fab.show();
 
 
                 if (lastPositions == null) {
@@ -148,8 +161,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        //回到顶部按钮
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
