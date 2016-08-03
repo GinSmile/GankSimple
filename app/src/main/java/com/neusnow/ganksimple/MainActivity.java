@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import butterknife.Bind;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -32,15 +33,14 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
 
-    private SwipeRefreshLayout mSwipeRefreshLayout;
-    private RecyclerView mRecyclerView;
+    @Bind(R.id.swipe_refresh_widget) private SwipeRefreshLayout mSwipeRefreshLayout;
+    @Bind(R.id.my_list) private RecyclerView mRecyclerView;
 
     boolean isLoading;
     private int index = 1;
     private List<Girl> data = new ArrayList<Girl>();
     private RecyclerViewAdapter adapter;
     private Handler handler = new Handler();
-
     private int[] lastPositions;
 
 
@@ -53,17 +53,19 @@ public class MainActivity extends AppCompatActivity {
 
         PicassoFaceDetector.initialize(this);
 
-        initData();
 
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_widget);
-        mRecyclerView = (RecyclerView) findViewById(R.id.my_list);
 
+        //初次进入，显示加载动画，加载初始的数据
         mSwipeRefreshLayout.post(new Runnable() {
             @Override
             public void run() {
                 mSwipeRefreshLayout.setRefreshing(true);
             }
         });
+        initData();
+
+
+        //监听下拉动作
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             //下拉刷新
             @Override
@@ -79,8 +81,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //添加适配器，点击事件
         adapter = new RecyclerViewAdapter(this, data);
-        //添加点击事件
         adapter.setOnItemClickListener(new RecyclerViewAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(View view, int position) {
@@ -93,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        //设置mRecyclerView
         //final LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         final StaggeredGridLayoutManager staggeredGridLayoutManager =
                 new StaggeredGridLayoutManager(2,StaggeredGridLayoutManager.VERTICAL);
@@ -101,8 +104,6 @@ public class MainActivity extends AppCompatActivity {
 
         SpacesItemDecoration decoration=new SpacesItemDecoration(16);
         mRecyclerView.addItemDecoration(decoration);
-
-
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -147,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
+        //回到顶部按钮
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -159,12 +160,13 @@ public class MainActivity extends AppCompatActivity {
                         mSwipeRefreshLayout.setRefreshing(true);
                              }
                 });
-                getData(1);
+                initData();
             }
         });
 
     }
 
+    //初始化数据
     public void initData(){
         handler.postDelayed(new Runnable() {
             @Override

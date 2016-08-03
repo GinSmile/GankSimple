@@ -16,6 +16,8 @@ import com.squareup.picasso.Transformation;
 
 import java.util.List;
 
+import butterknife.Bind;
+
 /**
  * Created by xujin on 16/07/20.
  */
@@ -112,16 +114,12 @@ public class RecyclerViewAdapter extends Adapter<ViewHolder> {
 
     static class ItemViewHolder extends ViewHolder {
 
-        TextView tv_desc;
-        TextView tv_date;
-        ImageView iv_girl;
+        @Bind(R.id.tv_desc) TextView tv_desc;
+        @Bind(R.id.tv_date) TextView tv_date;
+        @Bind(R.id.iv_girl) ImageView iv_girl;
 
         public ItemViewHolder(View view) {
             super(view);
-            tv_desc = (TextView) view.findViewById(R.id.tv_desc);
-            tv_date = (TextView) view.findViewById(R.id.tv_date);
-            iv_girl = (ImageView) view.findViewById(R.id.iv_girl);
-
         }
     }
 
