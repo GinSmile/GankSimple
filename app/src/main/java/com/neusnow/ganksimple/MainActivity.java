@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.gson.Gson;
@@ -22,16 +21,15 @@ import com.neusnow.ganksimple.bean.GirlPageBean;
 import com.neusnow.ganksimple.bean.SpacesItemDecoration;
 import com.rohitarya.picasso.facedetection.transformation.core.PicassoFaceDetector;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Girl> data = new ArrayList<Girl>();
     private RecyclerViewAdapter adapter;
     private Handler handler = new Handler();
-    public OkHttpClient mOkHttpClient;
+    //public OkHttpClient mOkHttpClient;
 
     private int[] lastPositions;
     /**
@@ -68,9 +66,6 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-
-        //创建okHttpClient对象
-        mOkHttpClient = new OkHttpClient();
 
         PicassoFaceDetector.initialize(this);
 
@@ -192,99 +187,100 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 获取测试数据
      */
-    private void getData()  {
-        Request request = new Request.Builder()
-                .url("http://gank.io/api/data/%E7%A6%8F%E5%88%A9/6/1")
+    private void getData() {
+        //1.创建Retrofit对象
+        Retrofit retrofit = new Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(Constant.BASE_URL)
                 .build();
-        mOkHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "网络连接失败", Toast.LENGTH_SHORT).show();
 
+        //2.创建访问请求
+        ApiService service = retrofit.create(ApiService.class);
+        Call<GirlPageBean> call = service.getData(1);
+
+        //3.发送请求
+        call.enqueue(new Callback<GirlPageBean>() {
+            @Override
+            public void onResponse(Call<GirlPageBean> call, Response<GirlPageBean> response) {
+                Collection<Girl> girls = new ArrayList<Girl>();
+                //4.处理结果
+                if (response.isSuccessful()){
+                    GirlPageBean result = response.body();
+                    if (result != null){
+                        List<GirlPageBean.ResultsBean> results = result.getResults();
+                        for(GirlPageBean.ResultsBean res : results){
+                            Girl girl = new Girl();
+                            girl.setDesc(res.getDesc());
+                            girl.setUrl(res.getUrl());
+                            girl.setPublishedAt(res.getPublishedAt());
+                            girl.setWho(res.getWho());
+
+                            girls.add(girl);
+                        }
                     }
-                });
+                }
+
+                data.addAll(girls);
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected code " + response);
-                }
-                String res = response.body().string();
-                Log.v("te::","download complete...1");
+            public void onFailure(Call<GirlPageBean> call, Throwable t) {
 
-
-                Collection<Girl> girls = analysisJson(res);
-                data.addAll(girls);
-
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        adapter.notifyDataSetChanged();
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        adapter.notifyItemRemoved(adapter.getItemCount());
-                        Toast.makeText(MainActivity.this, "下载完成," + adapter.getItemCount(), Toast.LENGTH_SHORT).show();
-                    }
-                });
             }
         });
-
-
 
         Log.v("te::","download complete...2");
 
     }
+
 
     private void getMoreData(int index)  {
-        Request request = new Request.Builder()
-                .url("http://gank.io/api/data/%E7%A6%8F%E5%88%A9/10/" + index)
-                .build();
-        mOkHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "网络连接失败", Toast.LENGTH_SHORT).show();
 
+        //1.创建Retrofit对象
+        Retrofit retrofit = new Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(Constant.BASE_URL)
+                .build();
+
+        //2.创建访问请求
+        ApiService service = retrofit.create(ApiService.class);
+        Call<GirlPageBean> call = service.getData(index);
+
+        //3.发送请求
+        call.enqueue(new Callback<GirlPageBean>() {
+            @Override
+            public void onResponse(Call<GirlPageBean> call, Response<GirlPageBean> response) {
+                Collection<Girl> girls = new ArrayList<Girl>();
+                //4.处理结果
+                if (response.isSuccessful()){
+                    GirlPageBean result = response.body();
+                    if (result != null){
+                        List<GirlPageBean.ResultsBean> results = result.getResults();
+                        for(GirlPageBean.ResultsBean res : results){
+                            Girl girl = new Girl();
+                            girl.setDesc(res.getDesc());
+                            girl.setUrl(res.getUrl());
+                            girl.setPublishedAt(res.getPublishedAt());
+                            girl.setWho(res.getWho());
+
+                            girls.add(girl);
+                        }
                     }
-                });
+                }
+
+                data.addAll(girls);
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
-                    throw new IOException("Unexpected code " + response);
-                }
-                String res = response.body().string();
-                Log.v("te::","download complete...1");
+            public void onFailure(Call<GirlPageBean> call, Throwable t) {
 
-
-                Collection<Girl> girls = analysisJson(res);
-                data.addAll(girls);
-
-                MainActivity.this.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        adapter.notifyDataSetChanged();
-                        mSwipeRefreshLayout.setRefreshing(false);
-                        adapter.notifyItemRemoved(adapter.getItemCount());
-                        Toast.makeText(MainActivity.this, "下载完成," + adapter.getItemCount(), Toast.LENGTH_SHORT).show();
-                    }
-                });
             }
         });
 
-
-
-        Log.v("te::","download complete...2");
+        Log.v("te::","download complete...more");
 
     }
+
 
     /**
      * 利用GSON解析JSON
