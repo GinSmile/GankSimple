@@ -26,11 +26,12 @@ import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -205,15 +206,22 @@ public class MainActivity extends AppCompatActivity {
 
         //1.创建Retrofit对象
         Retrofit retrofit = new Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(Constant.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .build();
 
         //2.创建访问请求
         ApiService service = retrofit.create(ApiService.class);
-        Call<GirlPageBean> call = service.getData(index);
 
-        //3.发送请求
+
+        /*
+
+        //-----------------------------不用rxjava---------------------------//
+
+        // Call<GirlPageBean> call = service.getData(index);
+
+         //3.发送请求
         call.enqueue(new Callback<GirlPageBean>() {
             @Override
             public void onResponse(Call<GirlPageBean> call, Response<GirlPageBean> response) {
@@ -239,6 +247,43 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        */
+
+
+        //-----------------------------用rxjava---------------------------//
+
+        service.getData(index)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        new Subscriber<GirlPageBean>() {
+                            @Override
+                            public void onCompleted() {
+
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onNext(GirlPageBean girlPageBean) {
+                                data.addAll(analysisResult(girlPageBean));
+                                adapter.notifyDataSetChanged();
+                                mSwipeRefreshLayout.setRefreshing(false);
+                                adapter.notifyItemRemoved(adapter.getItemCount());
+                                Toast.makeText(MainActivity.this, "下载完成," + adapter.getItemCount(), Toast.LENGTH_SHORT).show();
+
+                            }
+                        }
+                );
+
+
+
+
+
 
     }
 

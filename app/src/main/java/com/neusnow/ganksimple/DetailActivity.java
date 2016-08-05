@@ -37,6 +37,7 @@ public class DetailActivity extends AppCompatActivity {
 
 
 
+
         Picasso.with(this).load(url)
                 .transform(new CropSquareTransformation())
                 .placeholder(R.color.colorWhite)
